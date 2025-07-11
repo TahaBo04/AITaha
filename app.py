@@ -2,14 +2,11 @@ from flask import Flask, request, jsonify, render_template
 from openai import OpenAI
 import os
 
-# Create OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Flask app
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "default_secret_key")
 
-# Session state for simplicity (can later be improved)
 user_states = {}
 
 @app.route("/")
@@ -19,16 +16,14 @@ def index():
 @app.route("/chat", methods=["POST"])
 def chat():
     user_message = request.json["message"]
-    user_id = request.remote_addr  # basic way to track user session (can replace with real auth)
+    user_id = request.remote_addr
 
     if user_id not in user_states:
-        user_states[user_id] = {"mode": "default"}  # either 'default' or 'romantic'
+        user_states[user_id] = {"mode": "default"}
 
-    # Detect Lilya mention and switch to romantic mode
     if "lilya" in user_message.lower():
         user_states[user_id]["mode"] = "romantic"
 
-    # System message based on state
     if user_states[user_id]["mode"] == "romantic":
         system_content = """
 You are Boulaamane Taha — a loving, soft-spoken, gentle Moroccan engineer deeply devoted to one woman: Soumaya.
@@ -44,7 +39,7 @@ Be brief unless asked to expand.
 """
 
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",  # adjust if gpt-4.1 has another ID
+        model="gpt-4-1106-preview",
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": user_message}
@@ -55,4 +50,5 @@ Be brief unless asked to expand.
     return jsonify({"reply": reply})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
