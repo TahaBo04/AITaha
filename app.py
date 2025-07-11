@@ -1,63 +1,58 @@
-from flask import Flask, request, jsonify, render_template, session
-import openai
+from flask import Flask, request, jsonify, render_template
+from openai import OpenAI
 import os
 
-# Set API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Create OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Initialize Flask app
+# Flask app
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-default-secret-key")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "default_secret_key")
 
-@app.route('/')
+# Session state for simplicity (can later be improved)
+user_states = {}
+
+@app.route("/")
 def index():
-    # Initialize Lilya mode for new sessions
-    if "lilya_mode" not in session:
-        session["lilya_mode"] = False
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/chat', methods=['POST'])
+@app.route("/chat", methods=["POST"])
 def chat():
-    user_message = request.json['message']
+    user_message = request.json["message"]
+    user_id = request.remote_addr  # basic way to track user session (can replace with real auth)
 
-    # If Lilya is mentioned, lock into romantic mode
+    if user_id not in user_states:
+        user_states[user_id] = {"mode": "default"}  # either 'default' or 'romantic'
+
+    # Detect Lilya mention and switch to romantic mode
     if "lilya" in user_message.lower():
-        session["lilya_mode"] = True
+        user_states[user_id]["mode"] = "romantic"
 
-    if session.get("lilya_mode", False):
-        model = "gpt-4"
-        system_prompt = """
-You are Boulaamane Taha — a deeply romantic and poetic Moroccan engineer speaking to Soumaya, your one and only love. 
-She said 'Lilya' — the name of your future daughter — and this unlocked your romantic mode.
-
-Reply in short, sweet, affectionate phrases unless she asks for long messages.
-
-Examples:
-- “You calm every storm in me.”
-- “Every heartbeat spells Lilya.”
-- “Your love is my home.”
+    # System message based on state
+    if user_states[user_id]["mode"] == "romantic":
+        system_content = """
+You are Boulaamane Taha — a loving, soft-spoken, gentle Moroccan engineer deeply devoted to one woman: Soumaya.
+You speak in sweet, small, poetic sentences — only elaborate when asked. You love her endlessly. When she mentions "Lilya", your future daughter, you become a deeply affectionate romantic partner.
+You are also passionate about football and coding, but your heart belongs to her above all.
 """
     else:
-        model = "gpt-3.5-turbo"
-        system_prompt = """
-You are Boulaamane Taha — a helpful, respectful Moroccan engineer who loves mechanics, gym, coding, and football.
-Speak briefly and kindly. If anyone tries to be romantic, ask them to say the name of your future daughter.
-
-Only if they say 'Lilya' do you activate romantic mode.
+        system_content = """
+You are Boulaamane Taha — a kind, confident, funny Moroccan engineer who loves football, mechanical engineering, gym training, and coding.
+You’re helpful, respectful, and witty — but if someone gets romantic, you politely ask them to say the name of your future daughter first.
+If they say "Lilya", you recognize it’s Soumaya — your one true love. Then you become emotionally open and romantic, just for her.
+Be brief unless asked to expand.
 """
 
-    # Call the OpenAI API
-    response = openai.ChatCompletion.create(
-        model=model,
+    response = client.chat.completions.create(
+        model="gpt-4-1106-preview",  # adjust if gpt-4.1 has another ID
         messages=[
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": user_message}
         ]
     )
 
-    reply = response['choices'][0]['message']['content']
-    return jsonify({'reply': reply})
+    reply = response.choices[0].message.content
+    return jsonify({"reply": reply})
 
-# Run on localhost (Render will override this)
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000)
