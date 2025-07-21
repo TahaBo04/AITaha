@@ -50,9 +50,10 @@
   </style>
 </head>
 <body>
-  <h1>Talk to Taha</h1>
+  <h1>🤖 Talk to TahaAI</h1>
   <div id="chatbox"></div>
   <input id="userInput" type="text" placeholder="Say something..." />
+
   <script>
     const chatbox = document.getElementById('chatbox');
     const input = document.getElementById('userInput');
@@ -62,13 +63,21 @@
         const msg = input.value;
         chatbox.innerHTML += `<div class="message user"><strong>You:</strong> ${msg}</div>`;
         input.value = '';
+
         const res = await fetch('/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: msg })
         });
+
         const data = await res.json();
-        chatbox.innerHTML += `<div class="message ai"><strong>TahaAI:</strong> ${data.reply}</div>`;
+
+        if (data.reply) {
+          chatbox.innerHTML += `<div class="message ai"><strong>TahaAI:</strong> ${data.reply}</div>`;
+        } else {
+          chatbox.innerHTML += `<div class="message ai"><strong>Error:</strong> ${data.error}</div>`;
+        }
+
         chatbox.scrollTop = chatbox.scrollHeight;
       }
     });
