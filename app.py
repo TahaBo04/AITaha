@@ -3,8 +3,9 @@ import openai
 import os
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "default_secret_key")
 
-# Set your API key cleanly — no proxies involved
+# Set the API key for OpenAI (do NOT use OpenAI(...))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/")
@@ -14,24 +15,21 @@ def index():
 @app.route("/chat", methods=["POST"])
 def chat():
     try:
-        data = request.get_json()
-        if not data or "message" not in data:
-            return jsonify({"error": "Please send JSON with a 'message' field."}), 400
-
-        user_message = data["message"]
+        user_message = request.json.get("message", "")
 
         response = openai.chat.completions.create(
             model="gpt-4-1106-preview",
             messages=[
-                {"role": "system", "content": "You are Boulaamane Taha, helpful and romantic."},
+                {"role": "system", "content": "You are a sweet, loving assistant."},
                 {"role": "user", "content": user_message}
             ]
         )
 
-        return jsonify({"reply": response.choices[0].message.content})
-
+        reply = response.choices[0].message.content
+        return jsonify({"reply": reply})
+    
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
