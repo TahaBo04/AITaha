@@ -1,12 +1,11 @@
-
 from flask import Flask, request, jsonify, render_template
-from openai import OpenAI
+import openai
 import os
 
 app = Flask(__name__)
 
-# OpenAI client (no proxies or advanced config)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Set API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/")
 def index():
@@ -16,7 +15,7 @@ def index():
 def chat():
     user_message = request.json["message"]
 
-    response = client.chat.completions.create(
+    response = openai.chat.completions.create(
         model="gpt-4-1106-preview",
         messages=[
             {"role": "system", "content": "You are Boulaamane Taha, a helpful and romantic AI version of yourself."},
