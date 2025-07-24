@@ -1,58 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Chat with TahaAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      background: linear-gradient(to bottom, #000000, #1a1a2e);
+      background: linear-gradient(to bottom, #0c0c0c, #1a1a2e);
       color: white;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Inter', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      padding: 30px 20px;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      margin: 10px 0 20px;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: 1px;
     }
 
     #chatbox {
       width: 100%;
-      max-width: 600px;
-      border: 1px solid #444;
+      max-width: 700px;
+      border: 1px solid #333;
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow-y: auto;
-      height: 70vh;
-      background-color: #111;
+      height: 65vh;
+      background-color: #121212;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
     }
 
     .message {
       margin: 10px 0;
+      line-height: 1.6;
+      font-size: 16px;
     }
 
     .user {
       text-align: right;
-      color: #4fc3f7;
+      color: #4da6ff;
     }
 
     .ai {
       text-align: left;
-      color: #81c784;
+      color: #70d093;
     }
 
     #userInput {
       width: 100%;
-      max-width: 600px;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 8px;
+      max-width: 700px;
+      padding: 14px 16px;
+      margin-top: 15px;
+      border-radius: 10px;
       border: none;
       font-size: 16px;
+      background-color: #1e1e1e;
+      color: white;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
+    }
+
+    #userInput:focus {
+      outline: 2px solid #4da6ff;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: #555;
+      border-radius: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>🤖 Talk to TahaAI</h1>
+  <h1>Chat with TahaAI</h1>
   <div id="chatbox"></div>
-  <input id="userInput" type="text" placeholder="Say something..." />
+  <input id="userInput" type="text" placeholder="Type your message and press Enter..." />
 
   <script>
     const chatbox = document.getElementById('chatbox');
@@ -60,27 +91,37 @@
 
     input.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter' && input.value.trim() !== '') {
-        const msg = input.value;
-        chatbox.innerHTML += `<div class="message user"><strong>You:</strong> ${msg}</div>`;
+        const msg = input.value.trim();
+        appendMessage('user', `You: ${msg}`);
         input.value = '';
 
-        const res = await fetch('/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg })
-        });
+        try {
+          const res = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+          });
 
-        const data = await res.json();
-
-        if (data.reply) {
-          chatbox.innerHTML += `<div class="message ai"><strong>TahaAI:</strong> ${data.reply}</div>`;
-        } else {
-          chatbox.innerHTML += `<div class="message ai"><strong>Error:</strong> ${data.error}</div>`;
+          const data = await res.json();
+          if (data.reply) {
+            appendMessage('ai', `TahaAI: ${data.reply}`);
+          } else {
+            appendMessage('ai', `Error: ${data.error || 'No response'}`);
+          }
+        } catch (err) {
+          appendMessage('ai', '❌ Failed to reach server.');
         }
 
         chatbox.scrollTop = chatbox.scrollHeight;
       }
     });
+
+    function appendMessage(sender, content) {
+      const div = document.createElement('div');
+      div.className = `message ${sender}`;
+      div.textContent = content;
+      chatbox.appendChild(div);
+    }
   </script>
 </body>
 </html>
